@@ -7,7 +7,7 @@ import { Posts } from "./pages/Posts/Posts"
 function App() {
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/apgram">
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home/>} />
