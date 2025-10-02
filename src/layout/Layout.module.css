@@ -1,0 +1,11 @@
+.main {
+    display: flex;
+}
+
+.content {
+    margin-left: 296px;
+    padding: 27px 50px;
+    display: flex;
+    flex-direction: column;
+    row-gap: 52px;
+}

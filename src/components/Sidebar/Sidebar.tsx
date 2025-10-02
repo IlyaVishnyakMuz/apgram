@@ -1,14 +1,19 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
+import styles from "./Sidebar.module.css";
 
 export function Sidebar() {
     return(
-        <aside className="sidebar">
-            <div className="logo">
+        <aside className={styles.sidebar}>
+            <div className={styles.logo}>
                 <Link to="/">.APostgram</Link>
             </div>
             <ul>
-                <li><Link to="/">СГЕНЕРИРОВАТЬ</Link></li>
-                <li><Link to="/posts/">ПОСТЫ</Link></li>
+                <li>
+                    <NavLink to="/" className={({ isActive }) => (isActive ? styles.active : "")}>СГЕНЕРИРОВАТЬ</NavLink>
+                </li>
+                <li>
+                    <NavLink to="/posts/" className={({ isActive }) => (isActive ? styles.active : "")}>ПОСТЫ</NavLink>
+                </li>
             </ul>
         </aside>
     )

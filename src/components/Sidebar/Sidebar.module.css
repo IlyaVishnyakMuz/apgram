@@ -1,0 +1,37 @@
+.sidebar {
+    min-width: 296px;
+    max-width: 296px;
+    box-shadow: 0px 4px 30px 0px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    border-right: 1px solid #D6D6D6;
+}
+
+.logo {
+    text-align: center;
+    margin: 38px 0 63px;
+}
+
+.logo a {
+    font-weight: 700;
+    font-size: 24px;
+}
+
+.sidebar ul {
+    border-top: 1px solid #D6D6D6;
+}
+
+.sidebar ul li a {
+    padding: 16px 20px;
+    border-bottom: 1px solid #D6D6D6;
+    display: block;
+    color: #949494;
+}
+
+.sidebar ul li a.active, .sidebar ul li a:hover {
+    color: #8A6565;
+    background: #F4F4F4;
+    opacity: 1;
+}
