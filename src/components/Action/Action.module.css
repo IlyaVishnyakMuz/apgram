@@ -16,8 +16,8 @@
     background: #f3f3f3;
 }
 
-.action:active img {
-    transform: rotate(360deg);
+.action:active {
+    background: #dfdfdf;
 }
 
 .action img {
