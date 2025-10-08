@@ -1,31 +1,29 @@
-import { useEffect, useState } from "react"
 import { PostItem } from "../PostItem/PostItem"
 import styles from "./PostItems.module.css"
-import { generateNews } from "../../app/api"
 import type { Post } from "../../entities/post"
+import { Actions } from "../../entities/actions"
+import { StatusText } from "../StatusText/StatusText";
 
-export function PostItems() {
-    const [generatedPosts, setGeneratedPosts] = useState<Post[]>([])
+type PostItemsProps = {
+    posts: Post[];
+};
 
-    useEffect(() => {
-        const fetchData = async () => {
-            const response = await generateNews();
-            console.log(response);
-            setGeneratedPosts(response);
-        };
-
-        fetchData();
-    }, []);
-
+export function PostItems({ posts }: PostItemsProps) {
     return (
-        <div className={styles.items}>
-            {generatedPosts.length > 0 ? (
-                generatedPosts.map((post, index) => (
-                    <PostItem key={index} post={post} />
-                ))
-            ) : (
-                <p>Нет постов</p>
-            )}
-        </div>
+        <>
+            {
+                posts.length > 0 ? (
+                <div className={styles.items}>
+                    {
+                        posts.map((post, index) => (
+                            <PostItem key={index} post={post} actions={[Actions.Add]} />
+                        ))
+                    }
+                </div>
+                ) : (
+                    <StatusText text="Загрузка..." isAnimated={true} />
+                )
+            }
+        </>
     )
 }

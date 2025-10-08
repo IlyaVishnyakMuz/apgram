@@ -1,0 +1,22 @@
+.status_text {
+    text-align: center;
+    width: 100%;
+    margin-top: 87px;
+    font-size: 44px;
+    color: #CFCFCF;
+}
+
+.animated {
+    animation: fade 0.5s infinite alternate;
+}
+
+@keyframes fade {
+  from {
+    opacity: 1;
+    letter-spacing: 0px;
+  }
+  to {
+    opacity: 0.4;
+    letter-spacing: 3px;
+  }
+}

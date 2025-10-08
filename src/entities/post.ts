@@ -1,5 +1,9 @@
 export interface Post {
-    url: string,
-    title: string,
-    description: string
+    id: number;
+    url?: string | null;
+    title: string;
+    description: string;
+    chosen?: boolean;
+    scheduledAt?: string | null; // 🕓 дата и время запланированной отправки
 }
+  

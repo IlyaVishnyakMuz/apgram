@@ -5,11 +5,20 @@
     background: white;
     box-shadow: 0px 4px 15px 0px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.added {
+    opacity: 0.5;
+    user-select: none;
+    pointer-events: none;
 }
 
 .top {
-    height: 166px;
+    min-height: 166px;
     position: relative;
+    background: #D6D6D6;
 }
 
 .actions {
@@ -18,7 +27,8 @@
     column-gap: 7px;
     padding: 11px 21px;
     position: relative;
-    z-index: 1;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .img {
@@ -28,16 +38,30 @@
     position: absolute;
     left: 0;
     top: 0;
+    transition: 0.3s ease;
+    z-index: 1;
+}
+
+.img:hover {
+    opacity: 0.6;
 }
 
 .content {
     padding: 10px 20px 23px;
+    display: flex;
+    flex-direction: column;
+    row-gap: 10px;
+    height: 100%;
 }
 
 .title {
-    margin-bottom: 10px;
     font-weight: 600;
     font-size: 17px;
+    transition: 0.3s ease;
+}
+
+.title:hover {
+    opacity: 0.6;
 }
 
 .description {
@@ -48,5 +72,4 @@
     -webkit-box-orient: vertical;
     font-size: 14px;
     line-height: 130%;
-    margin-top: auto;
 }

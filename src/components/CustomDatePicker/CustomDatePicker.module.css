@@ -1,0 +1,66 @@
+.custom_datepicker {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3;
+    cursor: pointer;
+}
+
+.picker_container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    cursor: default;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.cancel_button,
+.save_button {
+    padding: 10px 0;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Кнопка отмены */
+.cancel_button {
+    background-color: #f3f3f3;
+    color: #555;
+}
+
+.cancel_button:hover {
+    background-color: #e6e6e6;
+    color: #000;
+}
+
+/* ✅ Кнопка сохранить */
+.save_button {
+    background-color: #4caf50;
+    color: white;
+    font-weight: 600;
+}
+
+.save_button:hover {
+    background-color: #43a047;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.save_button:active {
+    background-color: #3e8e41;
+    transform: translateY(0);
+    box-shadow: none;
+}

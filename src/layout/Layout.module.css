@@ -9,4 +9,5 @@
     flex-direction: column;
     row-gap: 52px;
     width: 100%;
+    min-height: calc(100vh - 54px);
 }

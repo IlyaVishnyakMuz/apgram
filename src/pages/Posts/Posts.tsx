@@ -1,7 +1,81 @@
+import { useEffect, useState, useRef } from "react";
+import type { Post } from "../../entities/post";
+import { getPosts } from "../../app/api";
+import styles from "./Posts.module.css";
+import { PostItem } from "../../components/PostItem/PostItem";
+import { Actions } from "../../entities/actions";
+import { StatusText } from "../../components/StatusText/StatusText";
+
 export function Posts() {
-    return(
-        <>
-            <div>posts</div>
-        </>
-    )
+  const [posts, setPosts] = useState<Post[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  // 📥 загрузка постов с сервера
+  async function loadPosts() {
+    try {
+      const data = await getPosts();
+      setPosts(data);
+    } catch (err) {
+      console.error("Ошибка при загрузке постов:", err);
+    }
+  }
+
+  // 🔌 подключение к WebSocket
+  function connectWebSocket() {
+    const ws = new WebSocket("ws://localhost:4000");
+    wsRef.current = ws;
+
+    ws.onopen = () => console.log("🟢 WS подключен");
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "posts_updated") {
+          console.log("📡 Обновление получено по WS");
+          loadPosts(); // 🔄 обновляем список
+        }
+      } catch (err) {
+        console.error("Ошибка WS-сообщения:", err);
+      }
+    };
+
+    ws.onclose = () => {
+      console.warn("🔴 WS отключён, переподключение через 3 сек...");
+      setTimeout(connectWebSocket, 3000); // авто-переподключение
+    };
+
+    ws.onerror = (err) => {
+      console.error("Ошибка WS:", err);
+      ws.close();
+    };
+  }
+
+  // 🧠 инициализация
+  useEffect(() => {
+    loadPosts();
+    connectWebSocket();
+
+    return () => {
+      wsRef.current?.close();
+    };
+  }, []);
+
+  return (
+    <>
+      {posts.length > 0 ? (
+        <div className={styles.items}>
+          {posts.map((post) => (
+            <PostItem
+              key={post.id}
+              post={post}
+              actions={[Actions.Calendar, Actions.Send]}
+              onUpdate={loadPosts}
+            />
+          ))}
+        </div>
+      ) : (
+        <StatusText text="Пока постов нет..." />
+      )}
+    </>
+  );
 }

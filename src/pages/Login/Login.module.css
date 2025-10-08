@@ -1,0 +1,93 @@
+.login_wrapper {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+}
+
+.login {
+    background: white;
+    border: 1px solid #D6D6D6;
+    border-radius: 16px;
+    box-shadow: 0px 4px 30px 0px rgba(0, 0, 0, 0.1);
+    padding: 30px 30px 50px;
+    max-width: 985px;
+    width: 100%;
+    max-height: max-content;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.title {
+    font-weight: 700;
+    font-size: 24px;
+    margin-bottom: 24px;
+}
+
+.tabs {
+    display: flex;
+    column-gap: 12px;
+    margin-bottom: 12px;
+}
+
+.tab {
+    width: 50%;
+    border-radius: 16px;
+    border: 1px solid #D6D6D6;
+    color: #D6D6D6;
+    font-weight: 700;
+    font-size: 18px;
+    padding: 18px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.tab.active, .tab:hover {
+    background: #F4F4F4;
+    color: #AE7B7B;
+}
+
+.content {
+    background: #F4F4F4;
+    border-radius: 16px;
+    padding: 26px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    row-gap: 18px;
+}
+
+.content input {
+    max-width: 441px;
+    width: 100%;
+    border: none;
+    outline: none;
+    background: white;
+    border-radius: 100px;
+    padding: 0px 21px;
+    border: 1px solid #D6D6D6;
+    min-height: 49px;
+}
+
+.content input::placeholder {
+    color: #CFCFCF;
+}
+
+.button {
+    margin-top: 30px;
+}
+
+.button button {
+    color: white;
+    font-weight: 700;
+    padding: 17px 41px;
+    border-radius: 8px;
+    background: #AE7B7B;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.button button:hover {
+    background: #8A6565;
+}
