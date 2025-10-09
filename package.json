@@ -32,7 +32,9 @@
     "rss-parser": "^3.13.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
-    "ws": "^8.18.3"
+    "swagger-ui-express": "^5.0.1",
+    "ws": "^8.18.3",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

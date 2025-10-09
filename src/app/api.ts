@@ -1,5 +1,6 @@
 // api.ts
-const API_URL = "https://apgram-backend.onrender.com/api";
+// const API_URL = "https://apgram-backend.onrender.com/api";
+const API_URL = "http://localhost:4000/api";
 const STORAGE_KEY = "generatedPosts";
 
 // --- 🧩 Вспомогательные функции ---
@@ -15,13 +16,22 @@ function safeParse<T>(json: string, fallback: T): T {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+// --- 🌐 Универсальный запрос с поддержкой токена ---
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  token?: string
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) headers["x-auth-token"] = token;
+
   const res = await fetch(`${API_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   });
 
   if (!res.ok) {
@@ -36,13 +46,82 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
-// --- 📤 Загрузка изображения ---
-export async function uploadImage(file: File): Promise<string> {
+// --- 👤 Работа с пользователями ---
+export async function registerUser(data: {
+  username: string;
+  password: string;
+  telegram_token: string;
+  channel_id: string;
+}) {
+  return request<{
+    success: boolean;
+    message: string;
+    userId: number;
+    auth_token: string;
+  }>(`/users/register`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function loginUser(data: { username: string; password: string }) {
+  return request<{
+    success: boolean;
+    message: string;
+    userId: number;
+    telegram_token: string;
+    channel_id: string;
+    auth_token: string;
+  }>(`/users/login`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getUserSettings(userId: number, token: string) {
+  return request<{ success: boolean; settings: any }>(
+    `/users/settings/${userId}`,
+    {},
+    token
+  );
+}
+
+export async function updateUserSettings(
+  userId: number,
+  settings: any,
+  token: string
+) {
+  return request<{ success: boolean; message: string }>(
+    `/users/settings/${userId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    },
+    token
+  );
+}
+
+/**
+ * 🚪 Выход из системы
+ * Удаляет токен и связанные данные из localStorage.
+ */
+export function logout() {
+  try {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (e) {
+    console.error("Ошибка при выходе из системы:", e);
+  }
+}
+
+export async function uploadImage(file: File, token: string): Promise<string> {
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await fetch(`${API_URL}/upload`, {
+  const res = await fetch(`${API_URL}/posts/upload`, {
     method: "POST",
+    headers: token ? { "x-auth-token": token } : undefined,
     body: formData,
   });
 
@@ -50,35 +129,44 @@ export async function uploadImage(file: File): Promise<string> {
   const data = await res.json();
   if (!data.success) throw new Error(data.error || "Ошибка загрузки");
 
-  return data.url.replace(/\\/g, "/"); // нормализуем путь
+  return data.url;
 }
 
-export function deleteImageFromPost(id: number) {
-  return request<{ success: boolean; message?: string }>(`/posts/${id}/image`, {
-    method: "DELETE",
-  });
+export function deleteImageFromPost(id: number, token: string) {
+  return request<{ success: boolean; message?: string }>(
+    `/posts/${id}/image`,
+    {
+      method: "DELETE",
+    },
+    token
+  );
 }
 
-
-// --- 📝 Работа с постами (в БД) ---
+// --- 📝 Работа с постами ---
 export function addPost(
+  userId: number,
   title: string,
   description: string,
   url: string | null,
-  scheduledAt?: string | null
+  scheduledAt?: string | null,
+  token?: string
 ) {
-  return request<{ success: boolean; id: number }>(`/posts`, {
-    method: "POST",
-    body: JSON.stringify({ title, description, url, scheduledAt }),
-  });
+  return request<{ success: boolean; id: number }>(
+    `/posts`,
+    {
+      method: "POST",
+      body: JSON.stringify({ userId, title, description, url, scheduledAt }),
+    },
+    token
+  );
 }
 
-export function getPosts() {
-  return request<any[]>(`/posts`);
+export function getUserPosts(userId: number, token: string) {
+  return request<any[]>(`/posts/user/${userId}`, {}, token);
 }
 
-export function getPostById(id: number) {
-  return request<any>(`/posts/${id}`);
+export function getPostById(id: number, token: string) {
+  return request<any>(`/posts/${id}`, {}, token);
 }
 
 export function updatePost(
@@ -86,60 +174,79 @@ export function updatePost(
   title: string,
   description: string,
   url: string | null,
-  scheduledAt?: string | null
+  scheduledAt?: string | null,
+  token?: string
 ) {
-  return request<{ success: boolean; message?: string }>(`/posts/${id}`, {
-    method: "PUT",
-    body: JSON.stringify({ title, description, url, scheduledAt }),
-  });
+  return request<{ success: boolean; message?: string }>(
+    `/posts/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ title, description, url, scheduledAt }),
+    },
+    token
+  );
 }
 
-export function deletePost(id: number) {
-  return request<{ success: boolean }>(`/posts/${id}`, {
-    method: "DELETE",
-  });
+export function deletePost(id: number, token: string) {
+  return request<{ success: boolean }>(`/posts/${id}`, { method: "DELETE" }, token);
 }
 
-export function sendPostToTelegram(id: number) {
-  return request<{ success: boolean; message?: string }>(`/sendPost/${id}`, {
-    method: "POST",
-  });
+export function sendPostToTelegram(id: number, token: string) {
+  return request<{ success: boolean; message?: string }>(
+    `/posts/sendPost/${id}`,
+    { method: "POST" },
+    token
+  );
 }
 
 // --- ⏰ Планировщик ---
-export function schedulePost(id: number, scheduledAt: string) {
+export function schedulePost(id: number, scheduledAt: string, token: string) {
   return request<{ success: boolean; message: string; scheduledAt: string }>(
-    `/schedulePost/${id}`,
+    `/posts/schedulePost/${id}`,
     {
       method: "POST",
       body: JSON.stringify({ scheduledAt }),
-    }
+    },
+    token
   );
 }
 
-export function cancelScheduledPost(id: number) {
+export function cancelScheduledPost(id: number, token: string) {
   return request<{ success: boolean; message: string }>(
-    `/schedulePost/${id}`,
+    `/posts/schedulePost/${id}`,
     {
       method: "DELETE",
-    }
+    },
+    token
   );
 }
 
-// --- 🤖 Генерация и локальное хранилище (только localStorage) ---
-export async function generatePosts(): Promise<any[]> {
+// --- 🤖 Генерация постов ---
+export async function generatePosts(
+  userId: number,
+  token: string,
+  prompt?: string // 👈 необязательный параметр
+): Promise<any[]> {
   try {
-    // ⚠️ Берём посты с сервера, но не сохраняем в БД
-    const posts = await request<any[]>(`/generate-posts`, { method: "POST" });
+    const body = prompt ? { prompt } : {}; // если промпт передан — отправляем его в body
 
-    // Создаём независимые локальные копии
+    const data = await request<{ success: boolean; userId: number; posts: any[] }>(
+      `/posts/generate-posts/${userId}`,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+      token
+    );
+
+    const posts = data.posts || [];
+
     const normalized = posts.map((p: any) => ({
       ...p,
       id: generateId(),
       chosen: false,
     }));
 
-    // Сохраняем только в localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
     return normalized;
   } catch (e) {
@@ -148,7 +255,9 @@ export async function generatePosts(): Promise<any[]> {
   }
 }
 
-export async function getStoredPosts(): Promise<any[]> {
+
+// --- 💾 Локальное хранилище ---
+export async function getStoredPosts(userId: number, token: string): Promise<any[]> {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
@@ -162,13 +271,13 @@ export async function getStoredPosts(): Promise<any[]> {
       return updated;
     } catch (e) {
       console.error("Ошибка при парсинге localStorage:", e);
-      return await generatePosts();
+      return await generatePosts(userId, token);
     }
   }
-  return await generatePosts();
+  return await generatePosts(userId, token);
 }
 
-// --- ✅ setChosen ---
+// --- ✅ Выбор поста ---
 export function setChosen(id: number) {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) return;

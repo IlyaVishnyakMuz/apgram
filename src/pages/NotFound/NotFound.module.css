@@ -1,0 +1,19 @@
+.notfound {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: calc(100vh - 54px);
+    row-gap: 15px;
+    text-align: center;
+}
+
+.notfound h1 {
+  font-weight: 800;
+  font-size: 68px;
+  font-family: "Montserrat", sans-serif;
+}
+
+.notfound h2{
+    font-size: 18px;
+}

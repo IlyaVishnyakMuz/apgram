@@ -110,13 +110,14 @@
     color: #CFCFCF;
 }
 
-.button {
+.bottom {
     margin-top: auto;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.button button {
+.bottom button {
     color: white;
     font-weight: 700;
     padding: 17px 41px;
@@ -125,12 +126,22 @@
     border: none;
     cursor: pointer;
     transition: 0.3s ease;
+    justify-self: flex-end;
+    margin-left: auto;
 }
 
-.button button:hover {
+.bottom button:hover {
     background: #8A6565;
 }
 
 .hidden {
     display: none;
+}
+
+.message.success {
+    color: #6eb054;
+}
+
+.message.error {
+    color: #da5050;
 }

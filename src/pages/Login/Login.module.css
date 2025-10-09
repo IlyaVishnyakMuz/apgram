@@ -91,3 +91,8 @@
 .button button:hover {
     background: #8A6565;
 }
+
+.error {
+    color: #da5050;
+    margin-top: 15px;
+}

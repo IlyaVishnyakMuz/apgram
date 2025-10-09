@@ -13,6 +13,7 @@ import {
 import { Actions } from "../../entities/actions";
 import { DateText } from "../DateText/DateText";
 import { CustomDatePicker } from "../CustomDatePicker/CustomDatePicker";
+import { CustomAlert } from "../CustomAlert/CustomAlert";
 
 type PostItemProps = {
   post: Post;
@@ -28,6 +29,20 @@ export function PostItem({ post, actions, onUpdate }: PostItemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
+  const [isModalShow, setIsModalShow] = useState(false);
+  const [modalText, setModalText] = useState("");
+
+  function showModal(text: string) {
+    setIsModalShow(false);
+      setTimeout(() => {
+        setModalText(text);
+        setIsModalShow(true)
+      }, 10);
+  }
+
+  const userId = Number(localStorage.getItem("user_id"));
+  const token = localStorage.getItem("auth_token");
+
   const formatDate = (date: Date) => {
     const d = date.getDate().toString().padStart(2, "0");
     const m = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -39,54 +54,60 @@ export function PostItem({ post, actions, onUpdate }: PostItemProps) {
 
   // ✅ Добавление поста в БД
   async function addToPosts() {
+    if (!userId || !token) {
+      showModal("Пожалуйста, войдите снова");
+      return;
+    }
+
     try {
-      await addPost(post.title, post.description, post.url || null);
+      await addPost(userId, post.title, post.description, post.url || null, null, token);
       setChosen(post.id);
       setIsChosen(true);
       onUpdate?.();
     } catch (err) {
-      console.error("Ошибка при добавлении поста:", err);
-      alert("Не удалось добавить пост");
+      showModal("Не удалось добавить пост");
     }
   }
 
-  // ✅ Отправка поста в Telegram (без удаления на фронте!)
+  // ✅ Отправка поста в Telegram
   async function sendPost() {
+    if (!token) {
+      showModal("Пожалуйста, войдите снова");
+      return;
+    }
+
     try {
-      await sendPostToTelegram(post.id);
-      onUpdate?.(); // бекенд сам удалит и WS обновит
+      await sendPostToTelegram(post.id, token);
+      onUpdate?.();
     } catch (err) {
-      console.error("Ошибка при отправке поста:", err);
-      alert("Не удалось отправить пост");
+      showModal("Ошибка при отправке поста в Telegram");
     }
   }
 
-  // ✅ Назначение даты
+  // ✅ Назначение даты публикации
   async function handleDateSelect(date: Date | null) {
-    if (!date) return;
+    if (!date || !token) return;
     setSelectedDate(date);
     setIsOpen(false);
 
     const iso = date.toISOString();
     try {
-      await schedulePost(post.id, iso);
+      await schedulePost(post.id, iso, token);
       onUpdate?.();
     } catch (err) {
-      console.error(err);
-      alert("Ошибка при назначении времени");
+      showModal("Ошибка при назначении времени");
     }
   }
 
-  // ✅ Отмена запланированной отправки
+  // ✅ Отмена запланированной публикации
   async function handleCancelSchedule() {
-    if (!selectedDate) return;
+    if (!selectedDate || !token) return;
     try {
-      await cancelScheduledPost(post.id);
+      await cancelScheduledPost(post.id, token);
       setSelectedDate(null);
       onUpdate?.();
     } catch (err) {
-      console.error(err);
-      alert("Ошибка при отмене отправки");
+      showModal("Ошибка при отмене отправки");
     }
   }
 
@@ -153,6 +174,7 @@ export function PostItem({ post, actions, onUpdate }: PostItemProps) {
           />
         )}
       </div>
+      <CustomAlert text={modalText} show={isModalShow} />
     </div>
   );
 }

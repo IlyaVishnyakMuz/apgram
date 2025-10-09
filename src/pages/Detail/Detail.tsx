@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  getPosts,
+  getPostById,
   updatePost,
   addPost,
   sendPostToTelegram,
@@ -17,6 +17,7 @@ import { StatusText } from "../../components/StatusText/StatusText";
 import { Action } from "../../components/Action/Action";
 import { DateText } from "../../components/DateText/DateText";
 import { CustomDatePicker } from "../../components/CustomDatePicker/CustomDatePicker";
+import { CustomAlert } from "../../components/CustomAlert/CustomAlert";
 import styles from "./Detail.module.css";
 
 export function Detail() {
@@ -31,6 +32,17 @@ export function Detail() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const navigate = useNavigate();
+
+  const [isModalShow, setIsModalShow] = useState(false);
+  const [modalText, setModalText] = useState("");
+
+  function showModal(text: string) {
+    setIsModalShow(false);
+      setTimeout(() => {
+        setModalText(text);
+        setIsModalShow(true)
+      }, 10);
+  }
 
   const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
   const descTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -60,15 +72,26 @@ export function Detail() {
   }, []);
 
   useEffect(() => {
+    // Используем динамический ws-адрес: по умолчанию локалхост (как было), но при деплое лучше настроить правильный адрес.
     const ws = new WebSocket("ws://localhost:4000");
 
     ws.onmessage = async (event) => {
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === "posts_updated") {
-          const backendPosts = await getPosts();
-          const exists = backendPosts.some((p) => p.id === numericId);
-          if (!exists) navigate(-1);
+          try {
+            const token = localStorage.getItem("auth_token") || undefined;
+            if (!token) {
+              // если нет токена — не проверяем бекенд
+              return;
+            }
+            // Пытаемся получить пост с бека — если он удалён, перейдём назад
+            await getPostById(numericId, token);
+            // если успешно — пост существует, ничего не делаем
+          } catch (err) {
+            // если запрос вернул ошибку (например 404), уходим назад
+            navigate(-1);
+          }
         }
       } catch (err) {
         console.error("Ошибка WS:", err);
@@ -85,6 +108,7 @@ export function Detail() {
         setLoading(true);
         setError(null);
 
+        // сначала смотрим в localStorage (сгенерированные посты)
         const saved = localStorage.getItem("generatedPosts");
         if (saved) {
           const arr: Post[] = JSON.parse(saved);
@@ -97,8 +121,18 @@ export function Detail() {
           }
         }
 
-        const backendPosts = await getPosts();
-        const backendFound = backendPosts.find((p) => p.id === numericId) || null;
+        // если не в локале — берём с бекенда (используем токен)
+        const token = localStorage.getItem("auth_token") || "";
+        let backendFound: Post | null = null;
+        if (token) {
+          try {
+            const fetched = await getPostById(numericId, token);
+            backendFound = fetched as Post;
+          } catch (e) {
+            backendFound = null;
+          }
+        }
+
         if (isMounted) {
           setPost(backendFound);
           setActions(backendFound ? [Actions.Calendar, Actions.Send] : []);
@@ -129,49 +163,78 @@ export function Detail() {
     requestAnimationFrame(setTextareaHeightFromDisplay);
   }, [post?.description, isDescEditing, setTextareaHeightFromDisplay]);
 
+  // --- вспомогательные значения из localStorage ---
+  const userId = Number(localStorage.getItem("user_id"));
+  const token = localStorage.getItem("auth_token") || undefined;
+
   async function handleAdd() {
     if (!post) return;
-    await addPost(post.title, post.description, post.url || null);
-    setChosen(post.id);
+    if (!userId || !token) {
+      showModal("Пожалуйста, войдите чтобы сохранить пост");
+      return;
+    }
+    try {
+      await addPost(userId, post.title, post.description, post.url || null, null, token);
+      setChosen(post.id);
+    } catch (err) {
+      console.error("Ошибка при добавлении:", err);
+      showModal("Не удалось добавить пост");
+    }
   }
 
   async function handleSend() {
     if (!post) return;
+    if (!token) {
+      showModal("Пожалуйста, войдите чтобы отправить пост");
+      return;
+    }
     try {
-      await sendPostToTelegram(post.id);
+      await sendPostToTelegram(post.id, token);
     } catch (err) {
       console.error("Ошибка при отправке поста:", err);
-      alert("Ошибка при отправке поста");
+      showModal("Ошибка при отправке поста");
     }
   }
 
   async function handleDateSelect(date: Date | null) {
     if (!date || !post) return;
+    if (!token) {
+      showModal("Пожалуйста, войдите чтобы запланировать пост");
+      return;
+    }
     setSelectedDate(date);
     setIsOpen(false);
     try {
-      await schedulePost(post.id, date.toISOString());
+      await schedulePost(post.id, date.toISOString(), token);
     } catch (err) {
       console.error(err);
-      alert("Ошибка при назначении времени");
+      showModal("Ошибка при назначении времени");
     }
   }
 
   async function handleCancelSchedule() {
     if (!selectedDate || !post) return;
+    if (!token) {
+      showModal("Пожалуйста, войдите чтобы отменить расписание");
+      return;
+    }
     try {
-      await cancelScheduledPost(post.id);
+      await cancelScheduledPost(post.id, token);
       setSelectedDate(null);
     } catch (err) {
       console.error(err);
-      alert("Ошибка при отмене");
+      showModal("Ошибка при отмене");
     }
   }
 
   const handleUpdate = useCallback(async () => {
     if (!post) return;
-    await updatePost(numericId, post.title, post.description, post.url || null);
-  }, [numericId, post]);
+    try {
+      await updatePost(numericId, post.title, post.description, post.url || null, undefined, token);
+    } catch (err) {
+      console.error("Ошибка при обновлении поста:", err);
+    }
+  }, [numericId, post, token]);
 
   // ✅ загрузка новой картинки
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -181,19 +244,25 @@ export function Detail() {
 
     const MAX_SIZE_MB = 10;
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      alert(`Размер файла превышает ${MAX_SIZE_MB} МБ. Выберите файл поменьше.`);
+      showModal(`Размер файла превышает ${MAX_SIZE_MB} МБ. Выберите файл поменьше.`);
+      e.target.value = "";
+      return;
+    }
+
+    if (!token) {
+      showModal("Пожалуйста, войдите чтобы загрузить изображение");
       e.target.value = "";
       return;
     }
 
     try {
-      const imageUrl = await uploadImage(file);
+      const imageUrl = await uploadImage(file, token);
       const updatedPost = { ...post, url: imageUrl };
       setPost(updatedPost);
-      await updatePost(numericId, updatedPost.title, updatedPost.description, imageUrl);
+      await updatePost(numericId, updatedPost.title, updatedPost.description, imageUrl, undefined, token);
     } catch (err) {
       console.error("Ошибка при загрузке картинки:", err);
-      alert("Не удалось загрузить изображение");
+      showModal("Не удалось загрузить изображение");
     } finally {
       e.target.value = "";
     }
@@ -202,12 +271,16 @@ export function Detail() {
   // ✅ удалить картинку
   async function handleDeleteImage() {
     if (!post) return;
+    if (!token) {
+      showModal("Пожалуйста, войдите чтобы удалить изображение");
+      return;
+    }
     try {
-      await deleteImageFromPost(post.id);
+      await deleteImageFromPost(post.id, token);
       setPost({ ...post, url: null });
     } catch (err) {
       console.error("Ошибка при удалении картинки:", err);
-      alert("Не удалось удалить картинку");
+      showModal("Не удалось удалить картинку");
     }
   }
 
@@ -262,7 +335,6 @@ export function Detail() {
             )}
           </div>
         )}
-
 
         {/* ✅ безопасный рендер картинки */}
         {!!post.url && typeof post.url === "string" && post.url.trim() !== "" && (
@@ -354,6 +426,7 @@ export function Detail() {
           onCancelSchedule={handleCancelSchedule}
         />
       )}
+      <CustomAlert text={modalText} show={isModalShow} />
     </div>
   );
 }

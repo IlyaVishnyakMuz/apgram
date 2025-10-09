@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import type { Post } from "../../entities/post";
-import { getPosts } from "../../app/api";
+import { getUserPosts } from "../../app/api";
 import styles from "./Posts.module.css";
 import { PostItem } from "../../components/PostItem/PostItem";
 import { Actions } from "../../entities/actions";
@@ -10,19 +10,34 @@ export function Posts() {
   const [posts, setPosts] = useState<Post[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // 📥 загрузка постов с сервера
+  // 📥 загрузка постов с сервера (использует userId + token)
   async function loadPosts() {
     try {
-      const data = await getPosts();
+      const userIdStr = localStorage.getItem("user_id");
+      const token = localStorage.getItem("auth_token") || "";
+      if (!userIdStr || !token) {
+        setPosts([]);
+        return;
+      }
+      const userId = Number(userIdStr);
+      const data = await getUserPosts(userId, token);
       setPosts(data);
     } catch (err) {
       console.error("Ошибка при загрузке постов:", err);
     }
   }
 
+  // 🔌 динамическое определение WebSocket URL
+  function getWsUrl() {
+    if (window.location.hostname.includes("render.com")) {
+      return "wss://apgram-backend.onrender.com";
+    }
+    return "ws://localhost:4000";
+  }
+
   // 🔌 подключение к WebSocket
   function connectWebSocket() {
-    const ws = new WebSocket("ws://localhost:4000");
+    const ws = new WebSocket(getWsUrl());
     wsRef.current = ws;
 
     ws.onopen = () => console.log("🟢 WS подключен");
