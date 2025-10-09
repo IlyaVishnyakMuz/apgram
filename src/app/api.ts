@@ -1,6 +1,6 @@
 // api.ts
-// const API_URL = "https://apgram-backend.onrender.com/api";
-const API_URL = "http://localhost:4000/api";
+const API_URL = "https://apgram-backend.onrender.com/api";
+// const API_URL = "http://localhost:4000/api";
 const STORAGE_KEY = "generatedPosts";
 
 // --- 🧩 Вспомогательные функции ---
