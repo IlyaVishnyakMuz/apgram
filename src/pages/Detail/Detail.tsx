@@ -33,6 +33,8 @@ export function Detail() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const navigate = useNavigate();
 
+  const wsRef = useRef<WebSocket | null>(null);
+
   const [isModalShow, setIsModalShow] = useState(false);
   const [modalText, setModalText] = useState("");
 
@@ -71,9 +73,17 @@ export function Detail() {
     ta.style.height = `${ta.scrollHeight}px`;
   }, []);
 
+  function getWsUrl() {
+    if (window.location.hostname.includes("render.com")) {
+      return "wss://apgram-backend.onrender.com";
+    }
+    return "ws://localhost:4000";
+  }
+
   useEffect(() => {
     // Используем динамический ws-адрес: по умолчанию локалхост (как было), но при деплое лучше настроить правильный адрес.
-    const ws = new WebSocket("ws://localhost:4000");
+    const ws = new WebSocket(getWsUrl());
+    wsRef.current = ws;
 
     ws.onmessage = async (event) => {
       try {
